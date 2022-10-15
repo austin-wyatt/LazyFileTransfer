@@ -48,6 +48,18 @@ private:
 	void sendFileInfo();
 	void sendFileData();
 
-	static const int _readBufferLen = 8 * 1024;
-	char _readBuffer[_readBufferLen];
+	void sendIOBuffer() 
+	{
+		send(this->ConnectedDest, _ioBuffer, *(int*)(_ioBuffer) + sizeof(int), 0);
+	}
+
+	template <typename T>
+	void fillIOBuffer(T data) 
+	{
+		*(int*)(_ioBuffer) = sizeof(data);
+		*(T*)(_ioBuffer + sizeof(int)) = data;
+	}
+
+	static const int _ioBufferLen = 8 * 1024;
+	char _ioBuffer[_ioBufferLen];
 };

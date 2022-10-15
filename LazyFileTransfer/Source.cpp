@@ -8,14 +8,14 @@ void Source::SendData(void* data, int len)
 
 void Source::BeginDataTransfer()
 {
-	long long data = TRANSFER_BEGIN;
-	SendData(_sendData(data));
+	fillIOBuffer(TRANSFER_BEGIN);
+	sendIOBuffer();
 }
 
 void Source::EndDataTransfer()
 {
-	long long data = TRANSFER_END;
-	SendData(_sendData(data));
+	fillIOBuffer(TRANSFER_END);
+	sendIOBuffer();
 }
 
 void Source::CloseConnection() 
@@ -40,25 +40,28 @@ void Source::sendFileInfo()
 
 	long long data;
 
-	data = FILE_INFO_HEADER;
-	SendData(_sendData(data));
+	fillIOBuffer(FILE_INFO_HEADER);
+	sendIOBuffer();
 
 	for (int i = 0; i < FilesToCopy.size(); i++)
 	{
-		data = FILE_INFO_FILE_BEGIN;
-		SendData(_sendData(data));
+		fillIOBuffer(FILE_INFO_FILE_BEGIN);
+		sendIOBuffer();
 
-		data = FILE_INFO_FILEPATH;
-		SendData(_sendData(data));
+		fillIOBuffer(FILE_INFO_FILEPATH);
+		sendIOBuffer();
+
+		fillIOBuffer(FILE_INFO_FILEPATH);
+		sendIOBuffer();
 
 		SendData(FilesToCopy.at(i).DestFilePath, FilesToCopy.at(i).DestFilePathLen);
 
-		data = FILE_INFO_FILE_COMPLETE;
-		SendData(_sendData(data));
+		fillIOBuffer(FILE_INFO_FILE_COMPLETE);
+		sendIOBuffer();
 	}
 
-	data = FILE_INFO_HEADER_COMPLETE;
-	SendData(_sendData(data));
+	fillIOBuffer(FILE_INFO_HEADER_COMPLETE);
+	sendIOBuffer();
 
 	EndDataTransfer();
 
@@ -67,7 +70,7 @@ void Source::sendFileInfo()
 
 void Source::sendFileData() 
 {
-	int bytesReceived = recv(this->ConnectedDest, _readBuffer, _readBufferLen, 0);
+	int bytesReceived = recv(this->ConnectedDest, _ioBuffer, _ioBufferLen, 0);
 
 	ifstream file;
 	streampos size;
@@ -77,7 +80,7 @@ void Source::sendFileData()
 
 	const int BLOCK_SIZE = 4 * 1024;
 
-	if (bytesReceived == sizeof(long long) && *(long long*)_readBuffer == DEST_REQ_DATA)
+	if (bytesReceived == sizeof(long long) && *(long long*)_ioBuffer == DEST_REQ_DATA)
 	{
 		SourceFileInfo* currFile;
 
@@ -101,13 +104,15 @@ void Source::sendFileData()
 					bytesToRead = size - currPos;
 					bytesToRead = bytesToRead > BLOCK_SIZE ? BLOCK_SIZE : bytesToRead;
 
-					file.read(_readBuffer, bytesToRead);
-					SendData(_readBuffer, bytesToRead);
+					file.read(_ioBuffer + 4, bytesToRead);
+					*(int*)(_ioBuffer) = bytesToRead;
+					sendIOBuffer();
+
 					currPos += bytesToRead;
 				}
 
-				data = FILE_INFO_EOF;
-				SendData(_sendData(data));
+				fillIOBuffer(FILE_INFO_EOF);
+				sendIOBuffer();
 				file.close();
 
 				cout << "File " << currFile->SourceFilePath << " sent" << endl;
@@ -116,8 +121,8 @@ void Source::sendFileData()
 			{
 				cout << "File " << currFile->SourceFilePath << " could not be opened" << endl;
 
-				data = FILE_INFO_FILE_CANCELED;
-				SendData(_sendData(data));
+				fillIOBuffer(FILE_INFO_FILE_CANCELED);
+				sendIOBuffer();
 			}
 		}
 	}

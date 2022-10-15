@@ -208,9 +208,6 @@ void Destination::processFileData(vector<FileInfo*>* fileInfo)
 
 	int totalBytesRecieved = 0;
 
-	/*int throwaway = recv(this->ConnectedSocket, _readBuffer, _readBufferLen, 0);
-	int tempValue = *(int*)_readBuffer;*/
-
 	for (int i = 0; i < fileInfo->size(); i++) 
 	{
 		curr = fileInfo->at(i);
