@@ -244,6 +244,7 @@ void Destination::processFileData(vector<FileInfo*>* fileInfo)
 					{
 						readBufferOffset += sizeof(long long);
 						success = false;
+						controlVal = FILE_INFO_EOF;
 						break;
 					}
 				}

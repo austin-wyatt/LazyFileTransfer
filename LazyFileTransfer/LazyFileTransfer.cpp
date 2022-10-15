@@ -28,28 +28,23 @@ SOCKET transferSocket;
 
 int main(int argc, char** argv)
 {
-    /*for (int i = 0; i < argc; i++) 
-    {
-        cout << argv[i] << endl;
-    }*/
-
     if (argc <= 1) 
     {
         cout << "No parameters provided (-source [source info] or -destination)" << endl;
         return 1;
     }
         
-    if(strcmp(argv[1], "-source") == 0)
+    if(strcmp(argv[1], "-source") == 0 && argc >= 5)
     {
         transferMode = TransferMode::Source;
     }
-    else if (strcmp(argv[1], "-destination") == 0) 
+    else if (strcmp(argv[1], "-destination") == 0 && argc == 3) 
     {
         transferMode = TransferMode::Destination;
     }
     else
     {
-        cout << "Incorrect parameters provided (-source [source info] or -destination)" << endl;
+        cout << "Incorrect parameters provided (-source [dest ip address] [fileSource] [fileDest] ... or -destination [dest ip address])" << endl;
         return 1;
     }
 
@@ -107,7 +102,7 @@ bool ResolveConnection(char** argv)
     switch (transferMode) 
     {
         case TransferMode::Destination:
-            inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr.s_addr);
+            inet_pton(AF_INET, argv[2], &addr.sin_addr.s_addr);
 
             result = bind(transferSocket, (SOCKADDR*)&addr, sizeof(addr));
 
