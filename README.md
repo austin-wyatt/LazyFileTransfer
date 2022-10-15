@@ -1,4 +1,5 @@
-#How to use
+## How to use
+
 On the destination machine, run the executable with the -destination [dest ip address] command line arguments.
 Ex ".\LazyFileTransfer.exe -destination 192.168.0.2"
 The ip address should be the ip address of the destination machine.
