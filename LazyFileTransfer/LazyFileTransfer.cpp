@@ -60,7 +60,6 @@ int main(int argc, char** argv)
 
     transferSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    Source* source;
     if (ResolveConnection(argv)) 
     {
         if (transferMode == TransferMode::Destination)
@@ -114,9 +113,6 @@ bool ResolveConnection(char** argv)
             }
 
             cout << "Socket bound to port " << TRANSFER_PORT_NUM << endl;
-
-            listen(transferSocket, 1);
-            //listen for data on port 
 
             break;
         case TransferMode::Source:
