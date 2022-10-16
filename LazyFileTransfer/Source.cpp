@@ -54,7 +54,7 @@ void Source::sendFileInfo()
 		fillIOBuffer(FILE_INFO_FILEPATH);
 		sendIOBuffer();
 
-		SendData(FilesToCopy.at(i).DestFilePath, FilesToCopy.at(i).DestFilePathLen);
+		SendData(FilesToCopy.at(i)->DestFilePath, FilesToCopy.at(i)->DestFilePathLen);
 
 		fillIOBuffer(FILE_INFO_FILE_COMPLETE);
 		sendIOBuffer();
@@ -86,7 +86,7 @@ void Source::sendFileData()
 
 		for (int i = 0; i < FilesToCopy.size(); i++) 
 		{
-			currFile = &FilesToCopy.at(i);
+			currFile = FilesToCopy.at(i);
 
 			file.open(currFile->SourceFilePath, fstream::binary | fstream::out | fstream::ate);
 
@@ -124,22 +124,67 @@ void Source::sendFileData()
 				fillIOBuffer(FILE_INFO_FILE_CANCELED);
 				sendIOBuffer();
 			}
+
+			delete currFile;
 		}
 	}
 }
 
 void Source::AddFile(char* sourcePath, char* destinationPath)
 {
-	SourceFileInfo info = SourceFileInfo();
+	filesystem::path* tempPath = new filesystem::path(sourcePath);
 
-	info.SourceFilePath = sourcePath;
-	info.DestFilePath = destinationPath;
-
-	int i = 0;
-	for (i = 0; *(destinationPath + i) != '\0'; i++) 
+	if (filesystem::is_directory(*tempPath))
 	{
-		info.DestFilePathLen = i + 1;
+		auto directoryIterator = filesystem::directory_iterator(*tempPath);
+
+		//If our source path is a directory, iterate through each entry of that directory and 
+		//recursively call AddFile on it. 
+		for (auto const& dir_entry : directoryIterator)
+		{
+			//entryPath is stack allocated but this shouldn't be an issue as we reduce its memory footprint 
+			//substantially before recursing. When doing this we also pass a new destinationPath to preserve
+			//the file structure.
+			string entryPath = dir_entry.path().string();
+			
+			//Create the source path C string for this entry. This memory will be cleared when the SourceFileInfo
+			//object is deleted after sending the file information to the destination socket.
+			char* newSourcePath = new char[entryPath.size() + 1];
+			memcpy(newSourcePath, entryPath.c_str(), entryPath.size());
+			newSourcePath[entryPath.size()] = '\0';
+
+			//Build the new destination path string to preserve folder structure
+			string* newDestPathStr = new string(destinationPath);
+			entryPath = entryPath.substr(entryPath.find_last_of('\\'));
+			newDestPathStr->append(entryPath);
+			
+			//Create the destination path C string for this entry.
+			char* newDestPath = new char[newDestPathStr->size() + 1];
+			memcpy(newDestPath, newDestPathStr->c_str(), newDestPathStr->size());
+			newDestPath[newDestPathStr->size()] = '\0';
+
+			delete newDestPathStr;
+
+			//Recursively call AddFile to either add this file to the list of files to send or 
+			//iterate its directory contents
+			AddFile(newSourcePath, newDestPath);
+		}
+	}
+	else 
+	{
+		SourceFileInfo* info = new SourceFileInfo();
+
+		info->SourceFilePath = sourcePath;
+		info->DestFilePath = destinationPath;
+
+		int i = 0;
+		for (i = 0; *(destinationPath + i) != '\0'; i++)
+		{
+			info->DestFilePathLen = i + 1;
+		}
+
+		FilesToCopy.push_back(info);
 	}
 
-	FilesToCopy.push_back(info);
+	delete tempPath;
 }

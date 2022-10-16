@@ -7,6 +7,7 @@
 #include "public.h"
 #include <vector>
 #include <fstream>
+#include <filesystem>
 
 #define _sendData(data) &data, sizeof(data)
 
@@ -33,7 +34,7 @@ public:
 
 	SOCKET ConnectedDest;
 
-	vector<SourceFileInfo> FilesToCopy = vector<SourceFileInfo>();
+	vector<SourceFileInfo*> FilesToCopy = vector<SourceFileInfo*>();
 
 	void SendData(void* data, int len);
 	void BeginDataTransfer();

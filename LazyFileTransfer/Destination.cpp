@@ -230,6 +230,35 @@ void Destination::processFileData(vector<FileInfo*>* fileInfo)
 	{
 		curr = fileInfo->at(i);
 
+		string* fullFilePath = new string(curr->FilePath);
+		int delimOffset = fullFilePath->find_last_of("\\");
+
+		if (delimOffset > 0) 
+		{
+			filesystem::path tempPath = filesystem::path(fullFilePath->substr(0, delimOffset));
+
+			//Check if the directory we are trying to place the file in doesn't exist.
+			//If it doesn't, attempt to create each directory in the tree 
+			//(CreateDirectoryA will fail if the directory already exists)
+			if (!filesystem::is_directory(tempPath)) 
+			{
+				delimOffset = 0;
+				while (delimOffset != -1)
+				{
+					if (delimOffset != 0)
+					{
+						CreateDirectoryA(fullFilePath->substr(0, delimOffset).c_str(), NULL);
+					}
+
+					delimOffset = fullFilePath->find("\\", delimOffset + 1);
+				}
+			}
+		}
+
+		delete fullFilePath;
+
+
+
 		file.open(curr->FilePath, fstream::binary | fstream::trunc | fstream::in);
 
 		long long controlVal = 0;
